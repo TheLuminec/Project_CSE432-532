@@ -30,8 +30,6 @@ A unique component of this project is that you will develop your own lightweight
 
 > **Important:** We are working exclusively with the **audio** portion of the RAVDESS dataset. You will **not** use any video or facial expression data. All your work should focus on extracting information from the audio signal only.
 
-_NOTE: Some part of this readme may updated during the course. It's good idea to `git pull` on your local repo to get latest information._
-
 ### Learning Objectives
 
 By completing this project you will be able to:
@@ -44,6 +42,16 @@ By completing this project you will be able to:
 - Explore unsupervised learning (clustering) applied to the same problem
 - Write a technical report with critical discussion of results
 - Demonstrate deep understanding of every piece of code you submit
+
+### Development Practices
+
+One of the goals of this project is to give you hands-on experience with workflows that mirror real-world software development. This goes beyond ML — it includes how you manage your code and collaborate.
+
+- **Stay in sync with the upstream repository.** Parts of this README and project materials may be updated during the semester. Make it a habit to regularly run `git pull` on your local repository so you always have the latest information.
+- **Use proper, atomic commits.** Each commit should capture a single logical change — implementing a new feature, fixing a bug, adding a visualization, etc. Do not treat Git as a backup tool where you dump large snapshots of your entire project at once. A clear, incremental commit history shows how your work evolved and demonstrates genuine understanding.
+- **Write meaningful commit messages.** A good commit message briefly describes _what_ changed and _why_. This is a professional skill that pays dividends in any collaborative environment.
+
+We do not formally teach Git in this course, but bringing together the right tools and practices is part of what makes this a real project rather than a textbook exercise. Your commit history is part of how your work is evaluated.
 
 ---
 
@@ -91,8 +99,8 @@ You will develop **MiniLearn** — your own mini scikit-learn–style Python pac
 
 ### Requirements
 
-1. **Importable Python package (miniLearn):** You should be able to write statements like `from minilearn.classifiers import LogisticRegression` in your SER notebook. MiniLearn is a replacement for scikit-learn (a mini custom one), so it is a good idea to follow the scikit-learn API pattern.
-   1. **[Recommended]** Follow the scikit-learn API pattern. Each model should have `.fit(X, y)`, `.predict(X)`, and `.score(X, y)` methods, similar to scikit-learn.
+1. **Importable Python package (miniLearn):** You should be able to write statements like `from minilearn.classifiers import LogisticRegression` in your SER notebook. MiniLearn is a mini replacement for scikit-learn, built from scratch.
+   1. **[Recommended]** Follow the scikit-learn API pattern. Each model should have `.fit(X, y)`, `.predict(X)`, and `.score(X, y)` methods, consistent with how scikit-learn models work.
    2. **Required implementations** (from scratch, using only NumPy/SciPy for numerical operations):
       - Preprocessing: feature standardization, train-test split
       - Logistic Regression (with gradient descent)
@@ -148,7 +156,7 @@ mfcc_mean = np.mean(mfcc, axis=1)                       # shape: (13,) — one m
 mfcc_std = np.std(mfcc, axis=1)                         # shape: (13,)
 ```
 
-Often using only one of this hand-crafted feature sets (e.g. MFCCs) is not enough to achive good performance. You may want to experiment with different combinations of features (e.g. MFCCs and dtheir deltas, chroma, ZCR, etc.) to see which combination works best for your classifiers. Combining multiple features is as simple as concatenating them together into one long feature vector per audio file.
+Often using only one of these hand-crafted feature sets (e.g. MFCCs) is not enough to achieve good performance. You may want to experiment with different combinations of features (e.g. MFCCs and their deltas, chroma, ZCR, etc.) to see which combination works best for your classifiers. Combining multiple features is as simple as concatenating them together into one long feature vector per audio file.
 
 ### 4.2 Pre-Trained Embeddings (To boost the accuracy)
 
@@ -217,7 +225,7 @@ Build a summary table of all models (accuracy, macro-F1, AUC, best hyperparamete
 
 ### Required Python Packages
 
-You will need: `numpy`, `pandas`, `matplotlib`, `seaborn`, `scikit-learn`, `librosa`, `soundfile`, `xgboost`,
+You will need: `numpy`, `pandas`, `matplotlib`, `seaborn`, `scikit-learn`, `librosa`, `soundfile`, `xgboost`.
 
 - I encourage you to use a deep learning framework (e.g., `tensorflow` or `pytorch`) for the ANN portion of the project. This will give you valuable exposure to deep learning concepts and tools that are widely used in both industry and academia. You can also use it for more advanced feature extraction (e.g., pre-trained audio embeddings) if you wish.
 

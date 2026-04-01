@@ -1,5 +1,7 @@
 import librosa as lr
 import numpy as np
+import pandas as pd
+import os
 
 def _file_name_to_metadata(fn: str):
     # Split the filename by dashes and remove the extension
@@ -84,7 +86,7 @@ def _wav_to_features(path: str):
     srf_max = np.max(srf, axis=1)
 
 
-    """features = {
+    features = {
         'mfcc_mean': mfcc_mean,
         'mfcc_std': mfcc_std,
         'mfcc_min': mfcc_min,
@@ -121,39 +123,54 @@ def _wav_to_features(path: str):
         'srf_std': srf_std,
         'srf_min': srf_min,
         'srf_max': srf_max
-    }"""
+    }
 
-    features = [
-        mfcc_mean, mfcc_std, mfcc_min, mfcc_max,
-        mfcc_delta_mean, mfcc_delta_std, mfcc_delta_min, mfcc_delta_max,
-        chroma_mean, chroma_std,
-        mel_spec_mean, mel_spec_std, mel_spec_max,
-        zcr_mean, zcr_std, zcr_min, zcr_max,
-        rms_mean, rms_std, rms_min, rms_max,
-        sp_mean, sp_std, sp_min, sp_max,
-        sb_mean, sb_std, sb_min, sb_max,
-        srf_mean, srf_std, srf_min, srf_max
-    ]
-    features = np.concatenate(features).tolist()
+    # features = [
+    #     mfcc_mean, mfcc_std, mfcc_min, mfcc_max,
+    #     mfcc_delta_mean, mfcc_delta_std, mfcc_delta_min, mfcc_delta_max,
+    #     chroma_mean, chroma_std,
+    #     mel_spec_mean, mel_spec_std, mel_spec_max,
+    #     zcr_mean, zcr_std, zcr_min, zcr_max,
+    #     rms_mean, rms_std, rms_min, rms_max,
+    #     sp_mean, sp_std, sp_min, sp_max,
+    #     sb_mean, sb_std, sb_min, sb_max,
+    #     srf_mean, srf_std, srf_min, srf_max
+    # ]
+    # features = np.concatenate(features).tolist()
 
     return features
 
-def _wav_to_feature_csv(wav_path: str, csv_dir: str):
-    name = wav_path.split('\\')[-1]
-    features = _wav_to_features(wav_path)
-
-    with open(f"{csv_dir}{name.split('.')[0]}_features.csv", 'w') as f:
-        f.write(','.join([str(f) for f in features]))
+def flatten_dict(d: dict):
+    flat = {}
+    for key, value in d.items():
+        if isinstance(value, np.ndarray):
+            for i in range(value.shape[0]):
+                flat[f"{key}_{i}"] = value[i]
+        else:
+            flat[key] = value
+    return flat
 
 def process_all_wavs(wav_dir: str, csv_dir: str):
-    import os
+    df = pd.DataFrame()
+    first = True
     for root, dirs, files in os.walk(wav_dir):
         for file in files:
             if file.endswith('.wav'):
                 wav_path = os.path.join(root, file)
-                _wav_to_feature_csv(wav_path, csv_dir)
+                labels = _file_name_to_metadata(file)
+                features = _wav_to_features(wav_path)
+                flat_features = flatten_dict(features)
+                if first:
+                    headers = list(labels.keys()) + list(flat_features.keys())
+                    df = pd.DataFrame(columns=headers)
+                    first = False
+                df.loc[len(df)] = list(labels.values()) + list(flat_features.values())
+
+    df.to_csv(f"{csv_dir}features2.csv", index=False)
+
+    return df
 
 if __name__ == "__main__":
     wav_dir = "SER_Project\\data\\"
-    csv_dir = "SER_Project\\processed_data\\"
+    csv_dir = "SER_Project\\"
     process_all_wavs(wav_dir, csv_dir)

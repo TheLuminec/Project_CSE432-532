@@ -125,19 +125,6 @@ def _wav_to_features(path: str):
         'srf_max': srf_max
     }
 
-    # features = [
-    #     mfcc_mean, mfcc_std, mfcc_min, mfcc_max,
-    #     mfcc_delta_mean, mfcc_delta_std, mfcc_delta_min, mfcc_delta_max,
-    #     chroma_mean, chroma_std,
-    #     mel_spec_mean, mel_spec_std, mel_spec_max,
-    #     zcr_mean, zcr_std, zcr_min, zcr_max,
-    #     rms_mean, rms_std, rms_min, rms_max,
-    #     sp_mean, sp_std, sp_min, sp_max,
-    #     sb_mean, sb_std, sb_min, sb_max,
-    #     srf_mean, srf_std, srf_min, srf_max
-    # ]
-    # features = np.concatenate(features).tolist()
-
     return features
 
 def flatten_dict(d: dict):
@@ -166,7 +153,7 @@ def process_all_wavs(wav_dir: str, csv_dir: str):
                     first = False
                 df.loc[len(df)] = list(labels.values()) + list(flat_features.values())
 
-    df.to_csv(f"{csv_dir}features2.csv", index=False)
+    df.to_csv(f"{csv_dir}features.csv", index=False)
 
     return df
 

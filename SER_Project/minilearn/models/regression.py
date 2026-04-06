@@ -2,7 +2,7 @@ from minilearn.models.base import Classifier
 import numpy as np
 
 class LogisticRegression(Classifier):
-    def __init__(self, learning_rate=0.01, n_iterations=1000):
+    def __init__(self, learning_rate=0.01, n_iterations=100):
         self.learning_rate = learning_rate
         self.n_iterations = n_iterations
         self.coef_ = None
@@ -20,6 +20,9 @@ class LogisticRegression(Classifier):
         self.classes_ = np.unique(y)
         self.n_features_ = n_features
 
+        if len(self.classes_) != 2:
+            raise ValueError("Logistic Regression is only implemented for binary classification.")
+
         for _ in range(self.n_iterations):
             y_predicted = self.predict(X)
 
@@ -31,8 +34,8 @@ class LogisticRegression(Classifier):
     def predict(self, X):
         linear_model = np.dot(X, self.coef_) + self.intercept_
         y_predicted = self._sigmoid(linear_model)
-        y_predicted_cls = [self.classes_[1] if i > 0.5 else self.classes_[0] for i in y_predicted]
-        return np.array(y_predicted_cls)
+        y_predicted_cls = np.where(y_predicted >= 0.5, self.classes_[1], self.classes_[0])
+        return y_predicted_cls
 
     def score(self, X, y):
         y_predicted = self.predict(X)

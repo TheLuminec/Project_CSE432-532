@@ -8,3 +8,4 @@ from minilearn.models.regression import *
 from minilearn.models.decisiontree import *
 from minilearn.models.naivebayes import *
 from minilearn.models.neighbors import *
+from minilearn.models.svm import *

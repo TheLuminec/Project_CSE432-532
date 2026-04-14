@@ -154,7 +154,6 @@ def process_all_wavs(wav_dir: str, csv_dir: str):
                 df.loc[len(df)] = list(labels.values()) + list(flat_features.values())
 
     df.to_csv(f"{csv_dir}features.csv", index=False)
-
     return df
 
 if __name__ == "__main__":

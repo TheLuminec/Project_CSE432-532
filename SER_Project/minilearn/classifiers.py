@@ -9,3 +9,6 @@ from minilearn.models.decisiontree import *
 from minilearn.models.naivebayes import *
 from minilearn.models.neighbors import *
 from minilearn.models.svm import *
+from minilearn.models.clustering import *
+
+

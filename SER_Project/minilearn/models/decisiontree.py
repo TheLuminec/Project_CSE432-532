@@ -30,9 +30,9 @@ class DecisionTreeClassifier(Classifier):
         y = np.array(y)
         n_samples, n_features = X.shape
         self.n_features_ = n_features
-        self.classes_ = np.unique(y)
+        self.classes_, y_idx = np.unique(y, return_inverse=True)
         
-        self.tree_ = self._build_tree(X, y, depth=0)
+        self.tree_ = self._build_tree(X, y_idx, depth=0)
 
     def _build_tree(self, X, y, depth):
         n_samples, n_features = X.shape
@@ -75,7 +75,7 @@ class DecisionTreeClassifier(Classifier):
     
     def _loss(self, y):
         if self.criterion == "gini":
-            return 1 - np.sum(np.bincount(y) / len(y) ** 2)
+            return 1 - np.sum((np.bincount(y) / len(y)) ** 2)
         elif self.criterion == "entropy":
             probabilities = np.bincount(y) / len(y)
             return -np.sum(probabilities * np.log2(probabilities + 1e-10))
@@ -100,10 +100,10 @@ class DecisionTreeClassifier(Classifier):
 
     def predict(self, X):
         X = np.array(X)
-        return np.array([self.tree_.forward(x) for x in X])
+        return np.array([self.classes_[self.tree_.forward(x)] for x in X])
 
     def score(self, X, y):
         y = np.array(y)
         y_pred = self.predict(X)
-        return np.mean(self.classes_[y_pred] == y)
+        return np.mean(y_pred == y)
     

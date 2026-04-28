@@ -27,7 +27,8 @@ class StandardScaler:
 
     def transform(self, X):
         X_transformed = X - self.mean_
-        X_transformed /= self.scale_
+        scale = np.where(self.scale_ == 0, 1.0, self.scale_)
+        X_transformed /= scale
         return X_transformed
 
     def fit_transform(self, X):

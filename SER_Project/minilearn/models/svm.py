@@ -45,12 +45,28 @@ class SVM(Classifier):
 
         self.classes_ = np.unique(y)
 
-        if len(self.classes_) != 2:
-            raise ValueError("SVM is only implemented for binary classification.")
-        
         if self.kernel in ('poly', 'polynomial') and self.degree <= 0:
             raise ValueError("degree must be positive for the polynomial kernel.")
 
+        if len(self.classes_) > 2:
+            self._is_multiclass = True
+            self.models_ = []
+            for c in self.classes_:
+                y_binary = np.where(y == c, 1, -1)
+                model = SVM(kernel=self.kernel, learning_rate=self.learning_rate,
+                            n_iterations=self.n_iterations, lambda_param=self.lambda_param,
+                            degree=self.degree, gamma=self.gamma, coef0=self.coef0,
+                            tolerance=self.tolerance, random_state=self.random_state)
+                model.classes_ = np.array([-1, 1])
+                model.n_features_ = self.n_features_
+                if self.kernel == 'linear':
+                    model._fit_linear(X, y_binary)
+                else:
+                    model._fit_kernelized(X, y_binary)
+                self.models_.append(model)
+            return
+
+        self._is_multiclass = False
         y_transformed = np.where(y == self.classes_[0], -1, 1)
 
         if self.kernel == 'linear':
@@ -207,6 +223,10 @@ class SVM(Classifier):
 
     def predict(self, X):
         X = np.array(X)
+        if getattr(self, '_is_multiclass', False):
+            decisions = np.column_stack([model._decision_function(X) for model in self.models_])
+            return self.classes_[np.argmax(decisions, axis=1)]
+            
         output = self._decision_function(X)
         y_predicted = np.where(output >= 0, self.classes_[1], self.classes_[0])
         return y_predicted

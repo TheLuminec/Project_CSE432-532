@@ -44,27 +44,29 @@ class LogisticRegression(Classifier):
         y = np.array(y)
         n_samples, n_features = X.shape
 
-        self.coef_ = np.zeros(n_features)
-        self.intercept_ = 0
-        self.classes_ = np.unique(y)
+        self.classes_, y_idx = np.unique(y, return_inverse=True)
+        n_classes = len(self.classes_)
 
-        if len(self.classes_) != 2:
-            raise ValueError("Logistic Regression is only implemented for binary classification.")
+        self.coef_ = np.zeros((n_features, n_classes))
+        self.intercept_ = np.zeros(n_classes)
+
+        y_onehot = np.zeros((n_samples, n_classes))
+        y_onehot[np.arange(n_samples), y_idx] = 1
 
         for _ in range(self.n_iterations):
-            y_predicted = self.predict(X)
+            linear_model = np.dot(X, self.coef_) + self.intercept_
+            exp_model = np.exp(linear_model - np.max(linear_model, axis=1, keepdims=True))
+            y_predicted = exp_model / np.sum(exp_model, axis=1, keepdims=True)
 
-            dw = (1 / n_samples) * np.dot(X.T, (y_predicted - y))
-            db = (1 / n_samples) * np.sum(y_predicted - y)
+            dw = (1 / n_samples) * np.dot(X.T, (y_predicted - y_onehot))
+            db = (1 / n_samples) * np.sum(y_predicted - y_onehot, axis=0)
             self.coef_ -= self.learning_rate * dw
             self.intercept_ -= self.learning_rate * db
 
     def predict(self, X):
         linear_model = np.dot(X, self.coef_) + self.intercept_
-        #y_predicted = self._sigmoid(linear_model)
-        y_predicted_cls = np.where(linear_model >= 0.5, self.classes_[1], self.classes_[0])
-        return y_predicted_cls
+        return self.classes_[np.argmax(linear_model, axis=1)]
 
     def score(self, X, y):
         y_predicted = self.predict(X)
-        return np.mean((y_predicted - y) ** 2)
+        return np.mean(y_predicted == y)

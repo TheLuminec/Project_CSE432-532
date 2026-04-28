@@ -14,10 +14,10 @@ class KNN(Classifier):
         y = np.array(y)
         n_samples, n_features = X.shape
         
-        self.classes_ = np.unique(y)
+        self.classes_, y_idx = np.unique(y, return_inverse=True)
         self.n_features_ = n_features
         self.data_ = X
-        self.labels_ = y
+        self.labels_ = y_idx
 
     def predict(self, X):
         X = np.array(X)
@@ -28,7 +28,7 @@ class KNN(Classifier):
             neighbor_indices = np.argsort(distances)[:self.n_neighbors]
             neighbor_labels = self.labels_[neighbor_indices]
             most_common = np.bincount(neighbor_labels).argmax()
-            y_predicted.append(most_common)
+            y_predicted.append(self.classes_[most_common])
         
         return np.array(y_predicted)
     

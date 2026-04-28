@@ -67,6 +67,17 @@ class ANN(nn.Module, Classifier):
             X = layer(X)
         return X
 
+class DenseANN(ANN):
+    def __init__(self, input_dim: int, hidden_layers: list[int], num_classes: int,):
+        layers = []
+        layers.append(nn.Linear(input_dim, hidden_layers[0]))
+        layers.append(nn.ReLU())
+        for i in range(len(hidden_layers) - 1):
+            layers.append(nn.Linear(hidden_layers[i], hidden_layers[i+1]))
+            layers.append(nn.ReLU())
+        layers.append(nn.Linear(hidden_layers[-1], num_classes))
+        super().__init__(layers)
+
 
 if __name__ == "__main__":
     from sklearn.datasets import load_digits

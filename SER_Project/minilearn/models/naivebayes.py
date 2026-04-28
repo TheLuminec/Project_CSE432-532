@@ -41,7 +41,7 @@ class GaussianNaiveBayes(Classifier):
     
     def _gaussian_likelihood(self, class_idx, x):
         mean = self.mean_[class_idx]
-        var = self.var_[class_idx]
+        var = self.var_[class_idx] + self.var_smoothing
         numerator = np.exp(-((x - mean) ** 2) / (2 * var))
         denominator = np.sqrt(2 * np.pi * var)
         return numerator / denominator

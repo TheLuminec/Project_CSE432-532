@@ -133,7 +133,7 @@ class GridSearchCV(CV):
         default_params = {}
         params = {}
         for key, values in self.param_grid.items():
-            if not isinstance(values, Collection):
+            if not isinstance(values, Collection) or isinstance(values, str):
                 default_params[key] = values
             else:
                 params[key] = values
@@ -204,22 +204,26 @@ class RandomizedSearchCV(CV):
         return param
     
     def fit(self, X, y):
+        X = np.array(X)
+        y = np.array(y)
         train_test_split = self.cv.split(X, y)
 
-        estimators = []
         self.cv_results_ = []
-        for train_indices, test_indices in train_test_split:
-            X_train, X_test = X[train_indices], X[test_indices]
-            y_train, y_test = y[train_indices], y[test_indices]
-            
+        for _ in range(self.n_iter):
             param = self._extract_parameters()
-            estimators.append(self.estimator(**param))
-            estimators[-1].fit(X_train, y_train)
-            y_pred = estimators[-1].predict(X_test)
-            score = self.scoring(y_test, y_pred)
+            scores = []
+            for train_indices, test_indices in train_test_split:
+                X_train, X_test = X[train_indices], X[test_indices]
+                y_train, y_test = y[train_indices], y[test_indices]
+                
+                model = self.estimator(**param)
+                model.fit(X_train, y_train)
+                y_pred = model.predict(X_test)
+                scores.append(self.scoring(y_test, y_pred))
+                
             self.cv_results_.append({
                 "params": param,
-                "mean_test_score": score
+                "mean_test_score": np.mean(scores)
             })
         
         self.best_params_ = max(self.cv_results_, key=lambda x: x["mean_test_score"])["params"]

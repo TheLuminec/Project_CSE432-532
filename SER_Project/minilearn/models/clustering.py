@@ -2,6 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 from minilearn.models.base import Classifier
+from minilearn.dim_reduction import pca
 
 class KMeans(Classifier):
     def __init__(self, n_clusters=8, max_iter=100, random_state=None):
@@ -111,22 +112,6 @@ def normalized_mutual_info_score(labels_true, labels_pred):
     if entropy_true + entropy_pred == 0:
         return 1.0
     return 2 * mi / (entropy_true + entropy_pred)
-
-
-def pca(X, n_components=2):
-    X = np.asarray(X)
-    X_centered = X - np.mean(X, axis=0)
-    cov_matrix = np.cov(X_centered, rowvar=False)
-    if cov_matrix.ndim == 0:
-        cov_matrix = np.array([[cov_matrix]])
-    eigenvalues, eigenvectors = np.linalg.eigh(cov_matrix)
-    
-    idx = np.argsort(eigenvalues)[::-1]
-    eigenvectors = eigenvectors[:, idx]
-    
-    top_eigenvectors = eigenvectors[:, :n_components]
-    return np.dot(X_centered, top_eigenvectors)
-
 
 def visualize_clusters(X, labels):        
     X_trans = pca(X, n_components=2)

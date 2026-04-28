@@ -1,9 +1,5 @@
 import numpy as np
 
-import sys
-import os
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..\..')))
-
 from minilearn.models.base import Classifier
 from minilearn.metrics import accuracy_score
 

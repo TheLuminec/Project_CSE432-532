@@ -3,10 +3,6 @@ from typing import Collection
 from itertools import product
 from abc import ABC, abstractmethod
 
-import sys
-import os
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-
 from minilearn.models.base import Classifier
 from minilearn.classifiers import SVM
 from minilearn.metrics import accuracy_score

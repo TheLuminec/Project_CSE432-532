@@ -14,7 +14,8 @@ class ANN(nn.Module, Classifier):
                  metric: callable = accuracy_score,
                  epochs: int = 10,
                  batch_size: int = 32,
-                 learning_rate: float = 0.001):
+                 learning_rate: float = 0.001,
+                 random_state: int = 42):
         """
         Args:
             layers (list[nn.Module]): List of layers in the network.
@@ -33,10 +34,26 @@ class ANN(nn.Module, Classifier):
         self.epochs = epochs
         self.batch_size = batch_size
         self.learning_rate = learning_rate
+        self.random_state = random_state
+        torch.random.manual_seed(random_state)
+
+    def _transform_labels(self, y):
+        """Transform labels to be 0-indexed."""
+        y = np.asarray(y)
+
+        unique_labels = np.unique(y)
+        if np.min(unique_labels) != 0 or np.max(unique_labels) != len(unique_labels) - 1:
+            label_to_int = {label: i for i, label in enumerate(unique_labels)}
+            y = np.array([label_to_int[label] for label in y], dtype=np.int64)
+        return y
+
 
     def fit(self, X, y):
+        X = np.asarray(X, dtype=np.float32)
         X = torch.tensor(X, dtype=torch.float32)
+        y = self._transform_labels(y)
         y = torch.tensor(y, dtype=torch.long)
+
         self.train()
         for epoch in range(self.epochs):
             for i in range(0, len(X), self.batch_size):
@@ -48,7 +65,6 @@ class ANN(nn.Module, Classifier):
                 loss.backward()
                 self.optimizer.step()
         
-
     def predict(self, X):
         X = np.asarray(X, dtype=np.float32)
         y_pred = []
@@ -60,6 +76,7 @@ class ANN(nn.Module, Classifier):
         return np.array(y_pred)
 
     def score(self, X, y):
+        y = self._transform_labels(y)
         return self.metric(y, self.predict(X))
 
     def forward(self, X):
@@ -68,7 +85,13 @@ class ANN(nn.Module, Classifier):
         return X
 
 class DenseANN(ANN):
-    def __init__(self, input_dim: int, hidden_layers: list[int], num_classes: int,):
+    def __init__(self, input_dim: int, hidden_layers: list[int], num_classes: int,
+                 optimizer: torch.optim.Optimizer = torch.optim.Adam,
+                 loss_fn: torch.nn.Module = nn.CrossEntropyLoss,
+                 metric: callable = accuracy_score,
+                 epochs: int = 10,
+                 batch_size: int = 32,
+                 learning_rate: float = 0.001):
         layers = []
         layers.append(nn.Linear(input_dim, hidden_layers[0]))
         layers.append(nn.ReLU())
@@ -76,7 +99,7 @@ class DenseANN(ANN):
             layers.append(nn.Linear(hidden_layers[i], hidden_layers[i+1]))
             layers.append(nn.ReLU())
         layers.append(nn.Linear(hidden_layers[-1], num_classes))
-        super().__init__(layers)
+        super().__init__(layers, optimizer, loss_fn, metric, epochs, batch_size, learning_rate)
 
 
 if __name__ == "__main__":

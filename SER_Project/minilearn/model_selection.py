@@ -4,7 +4,6 @@ from itertools import product
 from abc import ABC, abstractmethod
 
 from minilearn.models.base import Classifier
-from minilearn.classifiers import SVM
 from minilearn.metrics import accuracy_score
 
 class Split(ABC):
@@ -32,39 +31,19 @@ class KFold(Split):
         self.shuffle = shuffle
 
     def split(self, X, y):
-        classes, counts = np.unique(y, return_counts=True)
-        self.n_classes = len(classes)
-        
-        base_n_per_class = counts // self.n_splits
-        remainder = counts % self.n_splits
-        
-        folds = [[] for _ in range(self.n_splits)]
-        for i, cls in enumerate(classes):
-            cls_indices = np.where(y == cls)[0]
+        n_samples = len(X)
+        indices = np.arange(n_samples)
+        if self.shuffle:
+            rng = np.random.default_rng(self.random_state)
+            rng.shuffle(indices)
 
-            for fold_idx in range(self.n_splits):
-                start = fold_idx * base_n_per_class[i]
-                end = start + base_n_per_class[i]
-                folds[fold_idx].extend(cls_indices[start:end])
-        
-        # Distribute remainder samples one by one to folds
-        for cls_idx, cls in enumerate(classes):
-            remainder_count = remainder[cls_idx]
-            cls_indices = np.where(y == cls)[0]
-            
-            start = (self.n_splits * base_n_per_class[cls_idx])
-            remaining_cls_indices = cls_indices[start:]
-            for i in range(remainder_count):
-                fold_idx = i
-                folds[fold_idx].append(remaining_cls_indices[i])
-        
+        folds = np.array_split(indices, self.n_splits)
         train_test_splits = []
         for fold in folds:
-            fold_indices = np.array(fold, dtype=int)
-            if len(fold_indices) == 0:
+            test_indices = np.array(fold, dtype=int)
+            if len(test_indices) == 0:
                 continue
-            train_indices = fold_indices
-            test_indices = np.setdiff1d(np.arange(len(y)), fold_indices)
+            train_indices = np.setdiff1d(indices, test_indices, assume_unique=False)
             train_test_splits.append((train_indices, test_indices))
 
         return train_test_splits
@@ -75,39 +54,26 @@ class StratifiedKFold(Split):
         self.shuffle = shuffle
 
     def split(self, X, y):
-        classes, counts = np.unique(y, return_counts=True)
-        self.n_classes = len(classes)
-        
-        base_n_per_class = counts // self.n_splits
-        remainder = counts % self.n_splits
-        
+        y = np.asarray(y)
+        classes = np.unique(y)
         folds = [[] for _ in range(self.n_splits)]
-        for i, cls in enumerate(classes):
-            cls_indices = np.where(y == cls)[0]
+        rng = np.random.default_rng(self.random_state)
 
-            for fold_idx in range(self.n_splits):
-                start = fold_idx * base_n_per_class[i]
-                end = start + base_n_per_class[i]
-                folds[fold_idx].extend(cls_indices[start:end])
-        
-        # Distribute remainder samples one by one to folds
-        for cls_idx, cls in enumerate(classes):
-            remainder_count = remainder[cls_idx]
+        for cls in classes:
             cls_indices = np.where(y == cls)[0]
-            
-            start = (self.n_splits * base_n_per_class[cls_idx])
-            remaining_cls_indices = cls_indices[start:]
-            for i in range(remainder_count):
-                fold_idx = i
-                folds[fold_idx].append(remaining_cls_indices[i])
-        
+            if self.shuffle:
+                rng.shuffle(cls_indices)
+            cls_folds = np.array_split(cls_indices, self.n_splits)
+            for fold_idx, cls_fold in enumerate(cls_folds):
+                folds[fold_idx].extend(cls_fold.tolist())
+
+        all_indices = np.arange(len(y))
         train_test_splits = []
         for fold in folds:
-            fold_indices = np.array(fold, dtype=int)
-            if len(fold_indices) == 0:
+            test_indices = np.array(fold, dtype=int)
+            if len(test_indices) == 0:
                 continue
-            train_indices = fold_indices
-            test_indices = np.setdiff1d(np.arange(len(y)), fold_indices)
+            train_indices = np.setdiff1d(all_indices, test_indices, assume_unique=False)
             train_test_splits.append((train_indices, test_indices))
 
         return train_test_splits
@@ -145,25 +111,27 @@ class GridSearchCV(CV):
     def fit(self, X, y):
         X = np.array(X)
         y = np.array(y)
-        train_test_split = self.cv.split(X, y)
+        train_test_splits = self.cv.split(X, y)
 
-        estimators = []
         self.cv_results_ = []
         param_list = self._extract_parameters()
         for param in param_list:
-            for train_indices, test_indices in train_test_split:
+            scores = []
+            for train_indices, test_indices in train_test_splits:
                 X_train, X_test = X[train_indices], X[test_indices]
                 y_train, y_test = y[train_indices], y[test_indices]
-                
-                estimators.append(self.estimator(**param))
-                estimators[-1].fit(X_train, y_train)
-                y_pred = estimators[-1].predict(X_test)
-                score = self.scoring(y_test, y_pred)
-                self.cv_results_.append({
-                    "params": param,
-                    "mean_test_score": score
-                })
-        
+
+                model = self.estimator(**param)
+                model.fit(X_train, y_train)
+                y_pred = model.predict(X_test)
+                scores.append(self.scoring(y_test, y_pred))
+
+            self.cv_results_.append({
+                "params": param,
+                "mean_test_score": float(np.mean(scores)),
+                "split_test_scores": scores,
+            })
+
         self.best_params_ = max(self.cv_results_, key=lambda x: x["mean_test_score"])["params"]
         self.best_score_ = max(self.cv_results_, key=lambda x: x["mean_test_score"])["mean_test_score"]
         self.best_estimator_ = self.estimator(**self.best_params_)
@@ -179,12 +147,13 @@ class GridSearchCV(CV):
         return self.cv_results_
 
 class RandomizedSearchCV(CV):
-    def __init__(self, estimator: Classifier, param_distributions: dict, n_iter=10, cv: Split = None, scoring=accuracy_score):
+    def __init__(self, estimator: Classifier, param_distributions: dict, n_iter=10, cv: Split = None, scoring=accuracy_score, random_state=None):
         self.estimator = estimator
         self.param_distributions = param_distributions
         self.n_iter = n_iter
         self.cv = cv
         self.scoring = scoring
+        self.random_state = random_state
 
         if self.cv is None:
             self.cv = StratifiedKFold(n_splits=5)
@@ -193,26 +162,28 @@ class RandomizedSearchCV(CV):
         self.best_score_ = None
         self.best_estimator_ = None
         self.cv_results_ = None
+        self._rng = np.random.default_rng(self.random_state)
 
     def _extract_parameters(self):
         param = {}
         for key, value in self.param_distributions.items():
-            if not isinstance(value, Collection):
+            if not isinstance(value, Collection) or isinstance(value, str):
                 param[key] = value
             else:
-                param[key] = np.random.choice(value)
+                choices = list(value)
+                param[key] = choices[self._rng.integers(len(choices))]
         return param
     
     def fit(self, X, y):
         X = np.array(X)
         y = np.array(y)
-        train_test_split = self.cv.split(X, y)
+        train_test_splits = self.cv.split(X, y)
 
         self.cv_results_ = []
         for _ in range(self.n_iter):
             param = self._extract_parameters()
             scores = []
-            for train_indices, test_indices in train_test_split:
+            for train_indices, test_indices in train_test_splits:
                 X_train, X_test = X[train_indices], X[test_indices]
                 y_train, y_test = y[train_indices], y[test_indices]
                 
@@ -242,6 +213,7 @@ class RandomizedSearchCV(CV):
 
 if __name__ == "__main__":
     from sklearn.datasets import make_classification
+    from minilearn.classifiers import SVM
     X, y = make_classification(n_samples=100, n_features=2, n_informative=2, n_redundant=0, n_classes=2, random_state=42)
     param_grid = {
         "learning_rate": [0.01, 0.001, 0.0001],

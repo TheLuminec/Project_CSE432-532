@@ -58,7 +58,12 @@ class DecisionTreeClassifier(Classifier):
         left_indices = np.where(X[:, feature_index] <= threshold)[0]
         right_indices = np.where(X[:, feature_index] > threshold)[0]
         
-        if len(left_indices) == 0 or len(right_indices) == 0:
+        if (
+            len(left_indices) == 0
+            or len(right_indices) == 0
+            or len(left_indices) < self.min_samples_leaf
+            or len(right_indices) < self.min_samples_leaf
+        ):
             return 0
         
         left_loss = self._loss(y[left_indices])

@@ -86,6 +86,7 @@ class ANN(nn.Module, Classifier):
 
 class DenseANN(ANN):
     def __init__(self, input_dim: int, hidden_layers: list[int], num_classes: int,
+                 activation = nn.ReLU,
                  optimizer: torch.optim.Optimizer = torch.optim.Adam,
                  loss_fn: torch.nn.Module = nn.CrossEntropyLoss,
                  metric: callable = accuracy_score,
@@ -94,10 +95,10 @@ class DenseANN(ANN):
                  learning_rate: float = 0.001):
         layers = []
         layers.append(nn.Linear(input_dim, hidden_layers[0]))
-        layers.append(nn.ReLU())
+        layers.append(activation())
         for i in range(len(hidden_layers) - 1):
             layers.append(nn.Linear(hidden_layers[i], hidden_layers[i+1]))
-            layers.append(nn.ReLU())
+            layers.append(activation())
         layers.append(nn.Linear(hidden_layers[-1], num_classes))
         super().__init__(layers, optimizer, loss_fn, metric, epochs, batch_size, learning_rate)
 

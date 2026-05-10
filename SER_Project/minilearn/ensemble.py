@@ -2,19 +2,26 @@ from minilearn.models.base import Classifier
 from minilearn.metrics import accuracy_score
 import copy
 import numpy as np
+from typing import List, Union
 
 class VotingClassifier(Classifier):
-    def __init__(self, estimator: Classifier, n_estimators: int=5):
+    def __init__(self, estimator: Union[Classifier, List[Classifier]], n_estimators: int=5):
         self.estimators = []
-        self.n_estimators = n_estimators
-
-        for _ in range(n_estimators):
-            est = copy.deepcopy(estimator)
-            self.estimators.append(est)
+        if isinstance(estimator, list):
+            self.estimators = estimator
+            self.n_estimators = len(estimator)
+        else:
+            self.estimator = estimator
+            self.n_estimators = n_estimators
+        
 
     def fit(self, X, y):
         X = np.asarray(X)
         y = np.asarray(y)
+
+        for _ in range(self.n_estimators):
+            est = copy.deepcopy(self.estimator)
+            self.estimators.append(est)
 
         for e in self.estimators:
             indices = np.random.choice(len(X), size=len(X), replace=True)

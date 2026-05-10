@@ -1,57 +1,70 @@
-# SER Project — Speech Emotion Recognition with MiniLearn
+# SER Project - Speech Emotion Recognition with MiniLearn
 
-A complete Speech Emotion Recognition system built on the RAVDESS dataset,
-featuring **MiniLearn** — a from-scratch mini scikit-learn library.
+Speech Emotion Recognition on the RAVDESS audio-only dataset using a custom
+`minilearn` package for from-scratch machine learning models and utilities.
 
 ## Quick Start
 
 ```bash
-# 1. Create virtual environment
-python -m venv venv
-source venv/bin/activate
+# 1. Create a virtual environment
+python -m venv .venv
 
-# 2. Install dependencies
+# 2. Activate it
+# Windows PowerShell:
+.venv\Scripts\Activate.ps1
+
+# Linux/Mac
+source ./venv/bin/activate
+
+# 3. Install dependencies
 pip install -r requirements.txt
 
-# 3. Download RAVDESS audio-only data
+# 4. Download the RAVDESS audio-only data
 python download_data.py
 
-# 4. Extract features
-# e.g. python extract_features.py --data_dir data/ --output features.csv
+# 5. Extract metadata + audio features into features.csv
+python parser.py
 
-# 5. Open the classification notebook
-jupyter notebook notebooks/01_classification.ipynb
+# 6. Open the main SER notebook
+jupyter notebook notebooks/RAVDESS.ipynb
 ```
 
 ## Project Structure
 
-```
+```text
 SER_Project/
-├── minilearn/                  # From-scratch ML library
-│   ├── classifiers/            # LR, KNN, NB, Decision Tree
-│   ├── preprocessing/          # StandardScaler, train_test_split
-│   └── metrics/                # accuracy, precision, recall, F1, confusion matrix
-├── notebooks/
-│   └── 01_classification.ipynb # End-to-end SER classification demo
-├── extract_features.py         # Audio → feature CSV pipeline
-├── download_data.py            # Dataset download helper
-├── requirements.txt            # Python dependencies (one example)
-└── README.md
+|-- minilearn/                # From-scratch ML library
+|   |-- models/              # LR, KNN, NB, SVM, tree, clustering, ANN
+|   |-- preprocessing.py     # StandardScaler, train_test_split
+|   |-- metrics.py           # Accuracy, precision, recall, F1, ROC/AUC, confusion matrix
+|   |-- model_selection.py   # KFold, StratifiedKFold, GridSearchCV, RandomizedSearchCV
+|   |-- dim_reduction.py     # PCA
+|   |-- ensemble.py          # Voting ensemble helper
+|   `-- classifiers.py       # Convenience exports
+|-- notebooks/
+|   |-- RAVDESS.ipynb        # Main SER experiment notebook
+|   |-- eda.ipynb            # Early data exploration
+|   |-- minilearn.ipynb      # MiniLearn experiments/comparisons
+|   `-- cancer_tests.ipynb   # Sanity checks on standard datasets
+|-- parser.py                # WAV parsing + handcrafted feature extraction
+|-- download_data.py         # Dataset download helper
+|-- requirements.txt         # Python dependencies
+`-- README.md
 ```
 
 ## Dataset
 
-RAVDESS Audio-Only — 2,452 files (1,440 speech + 1,012 song) from 24 actors,
-8 emotions: neutral, calm, happy, sad, angry, fearful, disgust, surprised.
+This project uses the RAVDESS audio-only release from Zenodo:
+https://zenodo.org/records/1188976
 
-Source: https://zenodo.org/records/1188976
+The target label is the `emotion` field parsed from the RAVDESS filename.
 
 ## MiniLearn
 
-Import it like scikit-learn:
+Example usage:
 
 ```python
 from minilearn.classifiers import LogisticRegression, KNN, GaussianNaiveBayes
 from minilearn.preprocessing import StandardScaler, train_test_split
-from minilearn.metrics import accuracy_score, f1_score, confusion_matrix
+from minilearn.metrics import accuracy_score, f1_score, confusion_matrix, roc_auc_score
 ```

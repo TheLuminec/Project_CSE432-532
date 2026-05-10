@@ -33,10 +33,17 @@ class KMeans(Classifier):
         for _ in range(self.max_iter):
             # assign labels
             y_pred = np.argmin(np.linalg.norm(X[:, np.newaxis] - self.cluster_centers_, axis=2), axis=1)
-            
+
+            previous_centers = self.cluster_centers_.copy()
             # update centers
             for i in range(self.n_clusters):
-                self.cluster_centers_[i] = np.mean(X[y_pred == i], axis=0)
+                cluster_points = X[y_pred == i]
+                if len(cluster_points) == 0:
+                    continue
+                self.cluster_centers_[i] = np.mean(cluster_points, axis=0)
+
+            if np.allclose(previous_centers, self.cluster_centers_):
+                break
 
     def predict(self, X):
         X = np.array(X)

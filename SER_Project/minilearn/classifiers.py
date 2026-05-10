@@ -11,4 +11,5 @@ from minilearn.models.neighbors import *
 from minilearn.models.svm import *
 from minilearn.models.clustering import *
 from minilearn.models.ann import *
+from minilearn.ensemble import *
 
